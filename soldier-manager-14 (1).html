@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול חיילים</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&family=Assistant:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8B4513;
+            --primary-light: #A0522D;
+            --primary-dark: #654321;
+            --accent: #D2691E;
+            --accent-light: #CD853F;
+            --bg-main: #1a2332;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-hover: rgba(0, 0, 0, 0.15);
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: 'Assistant', 'Heebo', sans-serif;
+            background: linear-gradient(135deg, #0f1c2e 0%, #1a2942 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(210, 105, 30, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            background: linear-gradient(135deg, #8B4513 0%, #654321 100%);
+            padding: 50px 60px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            animation: slideDown 0.6s ease-out;
+            border: 1px solid rgba(210, 105, 30, 0.3);
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(210, 105, 30, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Heebo', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            letter-spacing: -0.5px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        h1 > span {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        h1 .main-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-direction: row-reverse;
+        }
+
+        h1 .main-title::before {
+            content: '🎖️';
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) hue-rotate(200deg) saturate(2);
+        }
+
+        h1 .subtitle {
+            font-size: 1rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px 25px;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border-right: 3px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent), transparent);
+            opacity: 0.15;
+            border-radius: 0 16px 0 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 5px;
+            height: 32px;
+            background: linear-gradient(to bottom, var(--accent), var(--accent-light));
+            border-radius: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Assistant', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--bg-main);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(139, 69, 19, 0.1);
+            background: white;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Assistant', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(139, 69, 19, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-main);
+            color: var(--primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .soldiers-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .soldier-card {
+            background: linear-gradient(135deg, var(--bg-main) 0%, white 100%);
+            padding: 25px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .soldier-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .soldier-image-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            border: 3px solid var(--accent);
+        }
+
+        .soldier-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+            transition: width 0.3s ease;
+        }
+
+        .soldier-card:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 8px 30px var(--shadow-hover);
+            border-color: var(--primary);
+        }
+
+        .soldier-card:hover::before {
+            width: 8px;
+        }
+
+        .soldier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .soldier-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .soldier-id {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .soldier-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .soldier-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .reminder-item {
+            background: linear-gradient(to left, var(--bg-main), white);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-right: 4px solid var(--accent);
+            transition: all 0.3s ease;
+            animation: slideInRight 0.4s ease-out both;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .reminder-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .reminder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .reminder-title {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .reminder-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .reminder-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .type-meeting {
+            background: rgba(139, 69, 19, 0.15);
+            color: var(--primary);
+        }
+
+        .type-medical {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--danger);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 35px 30px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h1 > span {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            h1 > span::before {
+                font-size: 2rem;
+            }
+
+            h1 .main-title {
+                font-size: 1.5rem;
+            }
+
+            h1 .subtitle {
+                font-size: 0.85rem;
+                display: block;
+            }
+
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .soldier-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--success);
+            color: white;
+            padding: 16px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            font-weight: 600;
+            transition: transform 0.4s ease;
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Login Screen */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f1c2e 0%, #1a2942 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: scaleIn 0.4s ease-out;
+        }
+
+        .login-box h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .login-box h2::before {
+            content: '🎖️';
+            font-size: 2.5rem;
+            filter: hue-rotate(200deg) saturate(2);
+        }
+
+        .login-box p {
+            color: var(--text-secondary);
+            margin-bottom: 35px;
+            font-size: 1.05rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .login-error {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .app-content {
+            display: none;
+        }
+
+        .app-content.visible {
+            display: block;
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-box input {
+            padding-right: 45px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h2>מערכת ניהול חיילים</h2>
+            <p>הכנס סיסמה כדי להמשיך</p>
+            <form class="login-form" id="loginForm">
+                <div class="login-error" id="loginError">סיסמה שגויה, נסה שוב</div>
+                <input type="password" id="passwordInput" placeholder="הכנס סיסמה" required autofocus>
+                <button type="submit" class="btn btn-primary">כניסה</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Content -->
+    <div class="app-content" id="appContent">
+        <button class="logout-btn" onclick="logout()">🚪 התנתק</button>
+
+    <div class="container">
+        <header>
+            <h1>
+                <span>
+                    <span class="main-title">מערכת ניהול חיילים</span>
+                    <span class="subtitle">• ניהול מקצועי של חיילים, תזכורות ומעקב רפואי</span>
+                </span>
+            </h1>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">סך הכל חיילים</div>
+                <div class="stat-value" id="totalSoldiers">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">תזכורות פעילות</div>
+                <div class="stat-value" id="totalReminders">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">מפגשים השבוע</div>
+                <div class="stat-value" id="weekMeetings">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">ייעוצים רפואיים</div>
+                <div class="stat-value" id="medicalConsults">0</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h2 class="section-title" style="margin: 0;">החיילים שלי</h2>
+                    <button class="btn btn-primary" onclick="openAddModal()">+ הוסף חייל</button>
+                </div>
+
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="חפש חייל לפי שם או מספר אישי..." oninput="filterSoldiers()">
+                </div>
+
+                <div class="soldiers-grid" id="soldiersGrid">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <p>עדיין לא הוספת חיילים למערכת</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">תזכורות קרובות</h2>
+                <div id="remindersContainer">
+                    <div class="empty-state">
+                        <p>אין תזכורות בזמן הקרוב</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding/Editing Soldier -->
+    <div class="modal" id="soldierModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">הוסף חייל חדש</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="soldierForm" onsubmit="saveSoldier(event)">
+                <input type="hidden" id="soldierId">
+                
+                <div class="form-group">
+                    <label>תמונה</label>
+                    <input type="file" id="soldierImage" accept="image/*" onchange="previewImage(event)">
+                    <div id="imagePreview" style="margin-top: 15px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; max-height: 200px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="removeImage()" style="margin-top: 10px; display: block;">הסר תמונה</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>שם מלא *</label>
+                    <input type="text" id="soldierName" required>
+                </div>
+
+                <div class="form-group">
+                    <label>מספר אישי *</label>
+                    <input type="text" id="personalNumber" required>
+                </div>
+
+                <div class="form-group">
+                    <label>דרגה</label>
+                    <select id="rank">
+                        <option value="טוראי">טוראי</option>
+                        <option value="רב טוראי">רב טוראי</option>
+                        <option value="סמל">סמל</option>
+                        <option value="סמל ראשון">סמל ראשון</option>
+                        <option value="רב סמל">רב סמל</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>תפקיד</label>
+                    <input type="text" id="role">
+                </div>
+
+                <div class="form-group">
+                    <label>טלפון</label>
+                    <input type="tel" id="phone">
+                </div>
+
+                <div class="form-group">
+                    <label>מייל</label>
+                    <input type="email" id="email">
+                </div>
+
+                <div class="form-group">
+                    <label>הערות</label>
+                    <textarea id="notes"></textarea>
+                </div>
+
+                <h3 style="margin: 30px 0 20px; color: var(--primary); font-size: 1.3rem;">תזכורות</h3>
+
+                <div class="form-group">
+                    <label>מפגש הבא</label>
+                    <input type="datetime-local" id="nextMeeting">
+                </div>
+
+                <div class="form-group">
+                    <label>ייעוץ רפואי</label>
+                    <input type="datetime-local" id="medicalConsult">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">שמור</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">ביטול</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4KMWW3RktksNLzqf2GCa9vMEAs7mi3EI",
+            authDomain: "soldier-management-468a3.firebaseapp.com",
+            databaseURL: "https://soldier-management-468a3-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "soldier-management-468a3",
+            storageBucket: "soldier-management-468a3.firebasestorage.app",
+            messagingSenderId: "109631494169",
+            appId: "1:109631494169:web:2418e8a409dfdd3ed77288"
+        };
+
+        // Initialize Firebase
+        let database;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+        } catch (error) {
+            console.log("Firebase initialization:", error);
+        }
+
+        // Password (change this to your desired password)
+        const SYSTEM_PASSWORD = "2606";
+
+        // Authentication
+        let isAuthenticated = false;
+
+        // Check if already logged in
+        if (sessionStorage.getItem('authenticated') === 'true') {
+            isAuthenticated = true;
+            showApp();
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const password = document.getElementById('passwordInput').value;
+            
+            if (password === SYSTEM_PASSWORD) {
+                isAuthenticated = true;
+                sessionStorage.setItem('authenticated', 'true');
+                showApp();
+            } else {
+                document.getElementById('loginError').classList.add('show');
+                document.getElementById('passwordInput').value = '';
+                setTimeout(() => {
+                    document.getElementById('loginError').classList.remove('show');
+                }, 3000);
+            }
+        });
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContent').classList.add('visible');
+            loadData();
+        }
+
+        function logout() {
+            if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
+                isAuthenticated = false;
+                sessionStorage.removeItem('authenticated');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContent').classList.remove('visible');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        // Data storage
+        let soldiers = [];
+        let editingId = null;
+        let currentImageData = null;
+
+        // Load data from Firebase or localStorage
+        function loadData() {
+            if (database) {
+                // Load from Firebase
+                database.ref('soldiers').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    soldiers = data ? Object.values(data) : [];
+                    renderSoldiers();
+                    renderReminders();
+                    updateStats();
+                });
+            } else {
+                // Fallback to localStorage
+                const stored = localStorage.getItem('soldiersData');
+                if (stored) {
+                    soldiers = JSON.parse(stored);
+                }
+                renderSoldiers();
+                renderReminders();
+                updateStats();
+            }
+        }
+
+        // Save data to Firebase and localStorage
+        function saveData() {
+            if (database) {
+                // Save to Firebase
+                const soldiersByKey = {};
+                soldiers.forEach(soldier => {
+                    soldiersByKey[soldier.id] = soldier;
+                });
+                database.ref('soldiers').set(soldiersByKey);
+            }
+            // Also save to localStorage as backup
+            localStorage.setItem('soldiersData', JSON.stringify(soldiers));
+        }
+
+        // Preview image
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageData = e.target.result;
+                    document.getElementById('previewImg').src = currentImageData;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Remove image
+        function removeImage() {
+            currentImageData = null;
+            document.getElementById('soldierImage').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Open add modal
+        function openAddModal() {
+            editingId = null;
+            currentImageData = null;
+            document.getElementById('modalTitle').textContent = 'הוסף חייל חדש';
+            document.getElementById('soldierForm').reset();
+            document.getElementById('soldierId').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('soldierModal').classList.add('active');
+        }
+
+        // Open edit modal
+        function editSoldier(id) {
+            const soldier = soldiers.find(s => s.id === id);
+            if (!soldier) return;
+
+            editingId = id;
+            currentImageData = soldier.image || null;
+            
+            document.getElementById('modalTitle').textContent = 'ערוך פרטי חייל';
+            document.getElementById('soldierId').value = soldier.id;
+            document.getElementById('soldierName').value = soldier.name;
+            document.getElementById('personalNumber').value = soldier.personalNumber;
+            document.getElementById('rank').value = soldier.rank;
+            document.getElementById('role').value = soldier.role || '';
+            document.getElementById('phone').value = soldier.phone || '';
+            document.getElementById('email').value = soldier.email || '';
+            document.getElementById('notes').value = soldier.notes || '';
+            
+            if (currentImageData) {
+                document.getElementById('previewImg').src = currentImageData;
+                document.getElementById('imagePreview').style.display = 'block';
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+            
+            if (soldier.nextMeeting) {
+                document.getElementById('nextMeeting').value = soldier.nextMeeting;
+            }
+            if (soldier.medicalConsult) {
+                document.getElementById('medicalConsult').value = soldier.medicalConsult;
+            }
+
+            document.getElementById('soldierModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('soldierModal').classList.remove('active');
+            document.getElementById('soldierForm').reset();
+            document.getElementById('imagePreview').style.display = 'none';
+            currentImageData = null;
+            editingId = null;
+        }
+
+        // Save soldier
+        function saveSoldier(event) {
+            event.preventDefault();
+
+            const soldierData = {
+                id: editingId || Date.now().toString(),
+                name: document.getElementById('soldierName').value,
+                personalNumber: document.getElementById('personalNumber').value,
+                rank: document.getElementById('rank').value,
+                role: document.getElementById('role').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                notes: document.getElementById('notes').value,
+                nextMeeting: document.getElementById('nextMeeting').value,
+                medicalConsult: document.getElementById('medicalConsult').value,
+                image: currentImageData,
+                createdAt: editingId ? soldiers.find(s => s.id === editingId).createdAt : new Date().toISOString()
+            };
+
+            if (editingId) {
+                const index = soldiers.findIndex(s => s.id === editingId);
+                soldiers[index] = soldierData;
+                showNotification('פרטי החייל עודכנו בהצלחה');
+            } else {
+                soldiers.push(soldierData);
+                showNotification('חייל חדש נוסף בהצלחה');
+            }
+
+            saveData();
+            renderSoldiers();
+            renderReminders();
+            updateStats();
+            closeModal();
+        }
+
+        // Delete soldier
+        function deleteSoldier(id) {
+            if (confirm('האם אתה בטוח שברצונך למחוק חייל זה?')) {
+                soldiers = soldiers.filter(s => s.id !== id);
+                saveData();
+                renderSoldiers();
+                renderReminders();
+                updateStats();
+                showNotification('החייל נמחק בהצלחה');
+            }
+        }
+
+        // Render soldiers
+        function renderSoldiers() {
+            const grid = document.getElementById('soldiersGrid');
+            
+            if (soldiers.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <p>עדיין לא הוספת חיילים למערכת</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = soldiers.map(soldier => `
+                <div class="soldier-card" style="animation-delay: ${soldiers.indexOf(soldier) * 0.1}s">
+                    <div class="soldier-header">
+                        ${soldier.image ? 
+                            `<img src="${soldier.image}" alt="${soldier.name}" class="soldier-image">` :
+                            `<div class="soldier-image-placeholder">👤</div>`
+                        }
+                        <div style="flex: 1;">
+                            <div class="soldier-name">${soldier.name}</div>
+                            <div class="soldier-id">מ.א: ${soldier.personalNumber}</div>
+                        </div>
+                    </div>
+                    <div class="soldier-info">
+                        <div class="info-item">
+                            <span class="info-label">דרגה</span>
+                            <span class="info-value">${soldier.rank}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תפקיד</span>
+                            <span class="info-value">${soldier.role || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">טלפון</span>
+                            <span class="info-value">${soldier.phone || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">מייל</span>
+                            <span class="info-value">${soldier.email || '-'}</span>
+                        </div>
+                    </div>
+                    ${soldier.notes ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--text-secondary);">${soldier.notes}</div>` : ''}
+                    <div class="soldier-actions">
+                        <button class="btn btn-primary btn-small" onclick="editSoldier('${soldier.id}')">ערוך</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteSoldier('${soldier.id}')">מחק</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render reminders
+        function renderReminders() {
+            const container = document.getElementById('remindersContainer');
+            const now = new Date();
+            const reminders = [];
+
+            soldiers.forEach(soldier => {
+                if (soldier.nextMeeting) {
+                    const meetingDate = new Date(soldier.nextMeeting);
+                    if (meetingDate >= now) {
+                        reminders.push({
+                            type: 'meeting',
+                            date: meetingDate,
+                            datetime: soldier.nextMeeting,
+                            soldier: soldier.name,
+                            soldierRank: soldier.rank
+                        });
+                    }
+                }
+                if (soldier.medicalConsult) {
+                    const consultDate = new Date(soldier.medicalConsult);
+                    if (consultDate >= now) {
+                        reminders.push({
+                            type: 'medical',
+                            date: consultDate,
+                            datetime: soldier.medicalConsult,
+                            soldier: soldier.name,
+                            soldierRank: soldier.rank
+                        });
+                    }
+                }
+            });
+
+            reminders.sort((a, b) => a.date - b.date);
+
+            if (reminders.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>אין תזכורות בזמן הקרוב</p></div>';
+                return;
+            }
+
+            container.innerHTML = reminders.slice(0, 10).map((reminder, index) => `
+                <div class="reminder-item" style="animation-delay: ${index * 0.1}s">
+                    <div class="reminder-header">
+                        <div>
+                            <div class="reminder-title">${reminder.soldierRank} ${reminder.soldier}</div>
+                            <span class="reminder-type ${reminder.type === 'meeting' ? 'type-meeting' : 'type-medical'}">
+                                ${reminder.type === 'meeting' ? '📅 מפגש' : '🏥 ייעוץ רפואי'}
+                            </span>
+                        </div>
+                        <div class="reminder-date">${formatDate(reminder.datetime)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Format date
+        function formatDate(datetime) {
+            const date = new Date(datetime);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalSoldiers').textContent = soldiers.length;
+
+            const now = new Date();
+            let totalReminders = 0;
+            let weekMeetings = 0;
+            let medicalConsults = 0;
+
+            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            soldiers.forEach(soldier => {
+                if (soldier.nextMeeting) {
+                    const meetingDate = new Date(soldier.nextMeeting);
+                    if (meetingDate >= now) {
+                        totalReminders++;
+                        if (meetingDate <= weekFromNow) {
+                            weekMeetings++;
+                        }
+                    }
+                }
+                if (soldier.medicalConsult) {
+                    const consultDate = new Date(soldier.medicalConsult);
+                    if (consultDate >= now) {
+                        totalReminders++;
+                        medicalConsults++;
+                    }
+                }
+            });
+
+            document.getElementById('totalReminders').textContent = totalReminders;
+            document.getElementById('weekMeetings').textContent = weekMeetings;
+            document.getElementById('medicalConsults').textContent = medicalConsults;
+        }
+
+        // Filter soldiers
+        function filterSoldiers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredSoldiers = soldiers.filter(soldier => 
+                soldier.name.toLowerCase().includes(searchTerm) ||
+                soldier.personalNumber.includes(searchTerm)
+            );
+
+            const grid = document.getElementById('soldiersGrid');
+            
+            if (filteredSoldiers.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>לא נמצאו חיילים התואמים לחיפוש</p></div>';
+                return;
+            }
+
+            grid.innerHTML = filteredSoldiers.map(soldier => `
+                <div class="soldier-card">
+                    <div class="soldier-header">
+                        ${soldier.image ? 
+                            `<img src="${soldier.image}" alt="${soldier.name}" class="soldier-image">` :
+                            `<div class="soldier-image-placeholder">👤</div>`
+                        }
+                        <div style="flex: 1;">
+                            <div class="soldier-name">${soldier.name}</div>
+                            <div class="soldier-id">מ.א: ${soldier.personalNumber}</div>
+                        </div>
+                    </div>
+                    <div class="soldier-info">
+                        <div class="info-item">
+                            <span class="info-label">דרגה</span>
+                            <span class="info-value">${soldier.rank}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">תפקיד</span>
+                            <span class="info-value">${soldier.role || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">טלפון</span>
+                            <span class="info-value">${soldier.phone || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">מייל</span>
+                            <span class="info-value">${soldier.email || '-'}</span>
+                        </div>
+                    </div>
+                    ${soldier.notes ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--text-secondary);">${soldier.notes}</div>` : ''}
+                    <div class="soldier-actions">
+                        <button class="btn btn-primary btn-small" onclick="editSoldier('${soldier.id}')">ערוך</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteSoldier('${soldier.id}')">מחק</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Check for upcoming reminders
+        function checkReminders() {
+            const now = new Date();
+            const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+            soldiers.forEach(soldier => {
+                if (soldier.nextMeeting) {
+                    const meetingDate = new Date(soldier.nextMeeting);
+                    if (meetingDate >= now && meetingDate <= in24Hours) {
+                        if (!localStorage.getItem(`notified_meeting_${soldier.id}`)) {
+                            showNotification(`תזכורת: מפגש עם ${soldier.name} תוך 24 שעות`);
+                            localStorage.setItem(`notified_meeting_${soldier.id}`, 'true');
+                        }
+                    }
+                }
+                if (soldier.medicalConsult) {
+                    const consultDate = new Date(soldier.medicalConsult);
+                    if (consultDate >= now && consultDate <= in24Hours) {
+                        if (!localStorage.getItem(`notified_medical_${soldier.id}`)) {
+                            showNotification(`תזכורת: ייעוץ רפואי ל${soldier.name} תוך 24 שעות`);
+                            localStorage.setItem(`notified_medical_${soldier.id}`, 'true');
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize only after authentication
+        // loadData() will be called from showApp()
+        
+        // Check reminders every hour (only when authenticated)
+        setInterval(() => {
+            if (isAuthenticated) {
+                checkReminders();
+            }
+        }, 3600000);
+
+        // Close modal on outside click
+        document.getElementById('soldierModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</div>
+</body>
+</html>
